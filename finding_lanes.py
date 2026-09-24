@@ -10,7 +10,7 @@ def canny(image):
 
 def region_of_interest(image):
     height = image.shape[0]
-    polygons = np.array([[(200, height), (550, 470), (1100, height)]])
+    polygons = np.array([[(0, 700), (500, 300), (960, 1000)]])
     mask = np.zeros_like(image)
     cv2.fillPoly(mask, polygons, 255)
     masked_image = cv2.bitwise_and(image, mask)
@@ -57,15 +57,36 @@ def average_slope_intercept(image, lines):
             
     
     
-image = cv2.imread('cavan_road.jpg')
-lane_image = np.copy(image)
-canny = canny(lane_image)
-cropped_image = region_of_interest(canny)
-lines = cv2.HoughLinesP(cropped_image, 2, np.pi/180, 100, np.array([]), minLineLength = 30, maxLineGap = 4)
-averaged_lines = average_slope_intercept(lane_image, lines)
-line_image = display_lines(lane_image, averaged_lines)
-combo_image = cv2.addWeighted(lane_image, 0.8, line_image, 1, 1)
-cv2.imshow("Result", combo_image)
+# image = cv2.imread('cavan_road.jpg')
+# lane_image = np.copy(image)
+# canny = canny(lane_image)
+# cropped_image = region_of_interest(canny)
+# lines = cv2.HoughLinesP(cropped_image, 2, np.pi/180, 100, np.array([]), minLineLength = 30, maxLineGap = 4)
+# averaged_lines = average_slope_intercept(lane_image, lines)
+# line_image = display_lines(lane_image, averaged_lines)
+# combo_image = cv2.addWeighted(lane_image, 0.8, line_image, 1, 1)
+# cv2.imshow("Result", combo_image)
 
 
-cv2.waitKey(0)
+# cv2.waitKey(0)
+cap = cv2.VideoCapture("JohnM50.mp4")
+while(cap.isOpened()):
+    _, frame = cap.read()
+    # cv2.imshow("Result", frame)
+    # cv2.waitKey(0)
+    if frame is not None:
+        frame = cv2.resize(frame, (960, 1280))
+        lane_image = np.copy(frame)
+        canny_image = canny(lane_image)
+        cropped_image = region_of_interest(canny_image)
+        lines = cv2.HoughLinesP(cropped_image, 2, np.pi/180, 100, np.array([]), minLineLength = 40, maxLineGap = 100)
+        averaged_lines = average_slope_intercept(lane_image, lines)
+        line_image = display_lines(lane_image, averaged_lines)
+        combo_image = cv2.addWeighted(lane_image, 0.8, line_image, 1, 1)
+        cv2.imshow("Result", combo_image)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+    else:
+        break
+cap.release()
+cv2.destroyAllWindows()
