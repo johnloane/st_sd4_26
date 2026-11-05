@@ -6,6 +6,7 @@ from tensorflow.keras.layers import Input, Dense
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.layers import Dropout, Flatten, Conv2D, MaxPooling2D
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import pickle
 import pandas as pd
 import cv2
@@ -27,19 +28,54 @@ def main():
     examine_random_training_image_after_preprocessing(X_train)
     X_train, X_val, X_test = reshape_for_cnn(X_train, X_val, X_test)
     y_train, y_val, y_test = one_hot_encode(num_classes, y_train, y_val, y_test)
-    model = leNet_model(num_classes)
+    model = modified_model(num_classes)
     print(model.summary())
-    evaluate_model(model, X_train, y_train, X_val, y_val, X_test, y_test)
+    datagen = create_data_generator()
+    explore_datagen(datagen, X_train, y_train)
+    evaluate_model(model, X_train, y_train, X_val, y_val, X_test, y_test, datagen)
     url_30 = "https://c8.alamy.com/comp/G667W0/road-sign-speed-limit-30-kmh-zone-passau-bavaria-germany-G667W0.jpg"
     url_turn_left = "https://c8.alamy.com/comp/A0RX23/cars-and-automobiles-must-turn-left-ahead-sign-A0RX23.jpg"
     url_slippery_road = "https://previews.123rf.com/images/bwylezich/bwylezich1608/bwylezich160800375/64914157-german-road-sign-slippery-road.jpg"
     url_yield = "https://previews.123rf.com/images/pejo/pejo0907/pejo090700003/5155701-german-traffic-sign-no-205-give-way.jpg"
     url_bicycle = "https://c8.alamy.com/comp/J2MRAJ/german-road-sign-bicycles-crossing-J2MRAJ.jpg"
-    test_model_with_image(model, image_to_test)
+    test_model_with_image(model, url_30)
+    test_model_with_image(model, url_turn_left)
+    test_model_with_image(model, url_slippery_road)
+    test_model_with_image(model, url_yield)
+    test_model_with_image(model, url_bicycle)
+ 
+  
+def explore_datagen(datagen, X_train, y_train):
+    datagen.fit(X_train)
+    batches = datagen.flow(X_train, y_train, batch_size=20)
+    X_batch, y_batch = next(batches)
+    fig, axs = plt.subplots(1, 15, figsize=(20, 5))
+    fig.tight_layout()
+    for i in range(15):
+        axs[i].imshow(X_batch[i].reshape(32, 32))
+        axs[i].axis('off')
+    plt.show()
     
-    
-def evaluate_model(model, X_train, y_train, X_val, y_val, X_test, y_test):
-    history = model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val), batch_size=400, verbose=1, shuffle=1)
+def create_data_generator():
+    datagen = ImageDataGenerator(width_shift_range=0.1, height_shift_range=0.1, zoom_range=0.2, shear_range=0.1, rotation_range=10)
+    return datagen   
+   
+ 
+def test_model_with_image(model, image_to_test):
+    r = requests.get(image_to_test, stream=True) 
+    img = Image.open(r.raw)
+    # Preprocess before passing to model
+    img = np.asarray(img)
+    img = cv2.resize(img, (32, 32))
+    img = preprocessing(img)
+    img = img.reshape(1, 32, 32, 1)
+    print("Predicted sign: " + str(np.argmax(model.predict(img), axis=1)))
+      
+   
+ 
+def evaluate_model(model, X_train, y_train, X_val, y_val, X_test, y_test, datagen):
+    datagen.fit(X_train)
+    history = model.fit(datagen.flow(X_train, y_train, batch_size=50), epochs=10,  validation_data=(X_val, y_val), verbose=1, shuffle=1)
     plt.plot(history.history['accuracy'])
     plt.plot(history.history['val_accuracy'])
     plt.legend(['training', 'validation'])
@@ -60,16 +96,34 @@ def evaluate_model(model, X_train, y_train, X_val, y_val, X_test, y_test):
 def leNet_model(num_classes):
     model = Sequential()
     model.add(Input(shape=(32, 32, 1)))
-    model.add(Conv2D(30, (5, 5), activation='relu'))
+    model.add(Conv2D(60, (5, 5), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2)))
-    model.add(Conv2D(15, (3,3), activation='relu'))
+    model.add(Conv2D(30, (3,3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2)))
     model.add(Flatten())
     model.add(Dense(500, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(num_classes, activation='softmax'))
-    model.compile(Adam(learning_rate=0.01), loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
     return model
+
+
+def modified_model(num_classes):
+    model = Sequential()
+    model.add(Input(shape=(32, 32, 1)))
+    model.add(Conv2D(60, (5, 5), activation='relu'))
+    model.add(Conv2D(60, (5, 5), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2,2)))
+    model.add(Conv2D(30, (3,3), activation='relu'))
+    model.add(Conv2D(30, (3,3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2,2)))
+    model.add(Flatten())
+    model.add(Dense(500, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(num_classes, activation='softmax'))
+    model.compile(Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
+
    
  
 def one_hot_encode(num_classes, y_train, y_val, y_test):
