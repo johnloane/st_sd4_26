@@ -29,6 +29,32 @@ def main():
     y_train, y_val, y_test = one_hot_encode(num_classes, y_train, y_val, y_test)
     model = leNet_model(num_classes)
     print(model.summary())
+    evaluate_model(model, X_train, y_train, X_val, y_val, X_test, y_test)
+    url_30 = "https://c8.alamy.com/comp/G667W0/road-sign-speed-limit-30-kmh-zone-passau-bavaria-germany-G667W0.jpg"
+    url_turn_left = "https://c8.alamy.com/comp/A0RX23/cars-and-automobiles-must-turn-left-ahead-sign-A0RX23.jpg"
+    url_slippery_road = "https://previews.123rf.com/images/bwylezich/bwylezich1608/bwylezich160800375/64914157-german-road-sign-slippery-road.jpg"
+    url_yield = "https://previews.123rf.com/images/pejo/pejo0907/pejo090700003/5155701-german-traffic-sign-no-205-give-way.jpg"
+    url_bicycle = "https://c8.alamy.com/comp/J2MRAJ/german-road-sign-bicycles-crossing-J2MRAJ.jpg"
+    test_model_with_image(model, image_to_test)
+    
+    
+def evaluate_model(model, X_train, y_train, X_val, y_val, X_test, y_test):
+    history = model.fit(X_train, y_train, epochs=10, validation_data=(X_val, y_val), batch_size=400, verbose=1, shuffle=1)
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
+    plt.legend(['training', 'validation'])
+    plt.title("Accuracy")
+    plt.xlabel("Epoch")
+    plt.show()
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.legend(['training', 'validation'])
+    plt.title("Loss")
+    plt.xlabel("Epoch")
+    plt.show()
+    score = model.evaluate(X_test, y_test, verbose=1)
+    print("Test score: ", score[0])
+    print("Test accuracy: ", score[1])
     
     
 def leNet_model(num_classes):
