@@ -30,9 +30,9 @@ def main():
 def  plot_validation_training_distribution(y_train, y_valid):
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].hist(y_train, bins=num_bins, width=0.05, color='blue')
-    axes[0].title('Training data')
+    axes[0].set_title('Training data')
     axes[1].hist(y_valid, bins=num_bins, width=0.05, color='red')
-    axes[1].title('Validation data')
+    axes[1].set_title('Validation data')
     plt.show()
 
     
@@ -47,10 +47,9 @@ def load_steering_img(datadir, data):
     steerings = []
     for i in range(len(data)):
         indexed_data = data.iloc[i]
-        print(indexed_data)
-        center, left, right = indexed_data[0], indexed_data[1], indexed_data[2]
+        center, left, right = indexed_data['center'], indexed_data['left'], indexed_data['right']
         image_path.append(os.path.join(datadir, center.strip()))
-        steerings.append(float(indexed_data[3]))
+        steerings.append(float(indexed_data['steering']))
     image_paths = np.asarray(image_path)
     steerings = np.asarray(steerings)
     return image_paths, steerings     
@@ -74,7 +73,7 @@ def balance_data(data, bins):
         list_ = list_[samples_per_bin:]
         remove_list.extend(list_)
     print("Remove: ", len(remove_list))
-    data.drop(data.index[remove_list], inplace=True)
+    data = data.drop(data.index[remove_list])
     print("Remaining: ", len(data))
     return data
         
